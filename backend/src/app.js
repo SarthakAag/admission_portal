@@ -15,15 +15,20 @@ const app = express();
 // Security headers
 app.use(helmet());
 
-// CORS configuration
+// CORS configuration — local development + production Vercel
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: [
+      "http://localhost:5173",
+      "https://admission-eta.vercel.app",
+    ],
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-// Parse incoming JSON
+// Parse incoming requests
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
