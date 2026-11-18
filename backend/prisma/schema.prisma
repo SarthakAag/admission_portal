@@ -1,0 +1,157 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  ADMIN
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  DOCUMENTS_PENDING
+  UNDER_REVIEW
+  SHORTLISTED
+  INTERVIEW_SCHEDULED
+  ACCEPTED
+  REJECTED
+  WAITLISTED
+  CONFIRMED
+}
+
+enum DocumentType {
+  PHOTO
+  SIGNATURE
+  CLASS_10_MARKSHEET
+  CLASS_12_MARKSHEET
+  TRANSFER_CERTIFICATE
+  ENTRANCE_SCORECARD
+  ID_PROOF
+  OTHER
+}
+
+model User {
+  id           String   @id @default(uuid())
+  fullName     String
+  email         String   @unique
+  phone         String?
+  passwordHash  String
+  role          UserRole @default(STUDENT)
+  isVerified    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  profile       StudentProfile?
+  applications  Application[]
+  notifications Notification[]
+}
+
+model StudentProfile {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  dateOfBirth    DateTime?
+  gender         String?
+  nationality     String?
+  address        String?
+  city           String?
+  state          String?
+  postalCode     String?
+  tenthBoard     String?
+  tenthYear      Int?
+  tenthPercentage Float?
+  twelfthBoard   String?
+  twelfthYear    Int?
+  twelfthStream  String?
+  twelfthPercentage Float?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Course {
+  id             String   @id @default(uuid())
+  courseCode     String   @unique
+  name           String
+  department     String
+  degree         String
+  description    String?
+  durationYears  Int
+  seatsAvailable Int      @default(0)
+  tuitionFee     Float     @default(0)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  applications Application[]
+}
+
+model Application {
+  id              String            @id @default(uuid())
+  applicationNumber String           @unique
+  userId          String
+  courseId        String
+  status          ApplicationStatus @default(DRAFT)
+  academicYear    String
+  entranceExam    String?
+  entranceRank    Int?
+  entranceScore   Float?
+  submittedAt     DateTime?
+  reviewedAt      DateTime?
+  remarks         String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course          Course            @relation(fields: [courseId], references: [id])
+  documents       Document[]
+  statusHistory   ApplicationStatusHistory[]
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([status])
+}
+
+model Document {
+  id           String       @id @default(uuid())
+  applicationId String
+  type         DocumentType
+  fileName     String
+  fileUrl      String
+  uploadedAt   DateTime     @default(now())
+  verified     Boolean      @default(false)
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model ApplicationStatusHistory {
+  id            String            @id @default(uuid())
+  applicationId  String
+  previousStatus ApplicationStatus?
+  newStatus     ApplicationStatus
+  changedBy     String?
+  remarks       String?
+  changedAt     DateTime          @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
